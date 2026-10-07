@@ -18,8 +18,18 @@ def reset():
     compose("up", "-d", "--build")
 
 def baseline():
-    with urllib.request.urlopen("http://localhost:8000/context/INC-1001", timeout=5) as resp:
-        print(resp.read().decode("utf-8"))
+    deadline = time.time() + 30
+    last_error = None
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen("http://localhost:8000/context/INC-1001", timeout=5) as resp:
+                print(resp.read().decode("utf-8"))
+                break
+        except Exception as exc:
+            last_error = exc
+            time.sleep(1)
+    else:
+        raise SystemExit(f"healthy baseline not established: {last_error}")
     compose("ps")
     compose("logs", "--tail", "30", "integration-client")
 
