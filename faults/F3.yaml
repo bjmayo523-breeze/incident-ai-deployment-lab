@@ -1,0 +1,7 @@
+services:
+  mock-datadog:
+    environment:
+      RESPONSE_DELAY_SECONDS: "4"
+  integration-client:
+    environment:
+      REQUEST_TIMEOUT_SECONDS: "1"

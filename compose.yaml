@@ -1,0 +1,46 @@
+services:
+  mock-servicenow:
+    build: ./mock-servicenow
+    environment:
+      PORT: "8001"
+      LAB_BEARER_TOKEN: "${LAB_BEARER_TOKEN:-phase2-demo-token}"
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+
+  mock-datadog:
+    build: ./mock-datadog
+    environment:
+      PORT: "8002"
+      LAB_BEARER_TOKEN: "${LAB_BEARER_TOKEN:-phase2-demo-token}"
+      RESPONSE_DELAY_SECONDS: "0"
+    ports:
+      - "8002:8002"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health', timeout=1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+
+  integration-client:
+    build: ./integration-client
+    env_file:
+      - ./config/lab.env
+    environment:
+      PORT: "8000"
+    depends_on:
+      mock-servicenow:
+        condition: service_healthy
+      mock-datadog:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 10

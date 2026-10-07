@@ -1,0 +1,4 @@
+services:
+  integration-client:
+    environment:
+      DATADOG_URL: http://mock-datadog:8999

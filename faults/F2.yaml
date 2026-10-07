@@ -1,0 +1,4 @@
+services:
+  mock-servicenow:
+    environment:
+      FAIL_STARTUP: "true"
