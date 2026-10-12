@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 *.log
 .runtime/
+data/incident_lab.db
