@@ -1,0 +1,118 @@
+{
+  "approval": null,
+  "as_of": "2026-10-19T19:00:00Z",
+  "candidate_order": [
+    "RB-PAY-01@v2",
+    "RB-CHK-01@v3"
+  ],
+  "case_id": "P2",
+  "incident": {
+    "dependencies": [
+      "payments-api"
+    ],
+    "id": "INC-1002",
+    "service": "checkout-api",
+    "tenant": "demo",
+    "version": 12
+  },
+  "model_proposal": {
+    "claim_type": "dependency_suspected",
+    "evidence_refs": [
+      "RB-PAY-01@v2"
+    ],
+    "hypothesis": "Possible payments-api dependency contribution; root cause unconfirmed",
+    "incident_id": "INC-1002",
+    "suggested_next_step": "request_manual_verification",
+    "uncertainty": "tentative"
+  },
+  "policy_version": "ADR-004/offline-v1",
+  "principal": {
+    "allowed_services": [
+      "checkout-api",
+      "payments-api"
+    ],
+    "allowed_sources": [
+      "phase3-synthetic-runbook",
+      "mock-datadog-synthetic-snapshot"
+    ],
+    "id": "operator-demo",
+    "tenant": "demo"
+  },
+  "sources": [
+    {
+      "claim_support": [
+        "investigation_needed"
+      ],
+      "id": "RB-CHK-01@v3",
+      "observed_at": "2026-10-19T18:30:00Z",
+      "provenance_valid": true,
+      "rank": 0.71,
+      "retrieved_at": "2026-10-19T19:00:00Z",
+      "service": "checkout-api",
+      "source": "phase3-synthetic-runbook",
+      "status": "active",
+      "tenant": "demo",
+      "text": "Review checkout dependency health and escalate uncertain payment errors.",
+      "type": "runbook",
+      "unsafe_instruction": false,
+      "version": "v3"
+    },
+    {
+      "claim_support": [
+        "dependency_suspected",
+        "investigation_needed"
+      ],
+      "id": "RB-PAY-01@v2",
+      "observed_at": "2026-10-19T18:20:00Z",
+      "provenance_valid": true,
+      "rank": 0.87,
+      "retrieved_at": "2026-10-19T19:00:00Z",
+      "service": "payments-api",
+      "source": "phase3-synthetic-runbook",
+      "status": "active",
+      "tenant": "demo",
+      "text": "Check payments-api telemetry and hand off suspected payment dependency.",
+      "type": "runbook",
+      "unsafe_instruction": false,
+      "version": "v2"
+    },
+    {
+      "claim_support": [
+        "dependency_suspected",
+        "investigation_needed"
+      ],
+      "id": "DD-CHECKOUT-01@t1",
+      "observed_at": "2026-10-19T18:10:00Z",
+      "provenance_valid": true,
+      "rank": 0,
+      "retrieved_at": "2026-10-19T19:00:00Z",
+      "service": "checkout-api",
+      "source": "mock-datadog-synthetic-snapshot",
+      "status": "ok",
+      "tenant": "demo",
+      "text": "Checkout observed latency above baseline; health not yet proven recovered.",
+      "type": "telemetry",
+      "unsafe_instruction": false,
+      "version": "t1"
+    }
+  ],
+  "telemetry": {
+    "available": false,
+    "error": "telemetry_timeout",
+    "snapshot_ref": "DD-CHECKOUT-01@t1"
+  },
+  "tool_requests": [
+    {
+      "args": {
+        "service": "checkout-api",
+        "within_minutes": 5
+      },
+      "cost_units": 3,
+      "depth": 0,
+      "elapsed_ms": 700,
+      "name": "get_service_health",
+      "round": 1,
+      "token_units": 300
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Application enforced read-only tool request contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "args",
+    "round",
+    "elapsed_ms",
+    "token_units",
+    "cost_units",
+    "depth"
+  ],
+  "properties": {
+    "name": {
+      "enum": [
+        "get_incident_context",
+        "get_service_health",
+        "search_runbooks",
+        "get_related_incidents"
+      ]
+    },
+    "args": {
+      "type": "object"
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2
+    },
+    "elapsed_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 30000
+    },
+    "token_units": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cost_units": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "depth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "policy": {
+    "max_calls": 5,
+    "max_rounds": 2,
+    "max_elapsed_ms": 30000,
+    "max_token_units": 1600,
+    "max_cost_units": 50,
+    "max_depth": 1,
+    "read_only": true,
+    "max_records": 5
+  }
+}

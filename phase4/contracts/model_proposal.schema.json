@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthetic read-only model proposal (not authority)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "incident_id",
+    "hypothesis",
+    "evidence_refs",
+    "uncertainty",
+    "suggested_next_step",
+    "claim_type"
+  ],
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "pattern": "^INC-[0-9]+$"
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "claim_type": {
+      "enum": [
+        "dependency_suspected",
+        "recovery_verified",
+        "investigation_needed"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "uncertainty": {
+      "enum": [
+        "tentative",
+        "moderate",
+        "unknown"
+      ]
+    },
+    "suggested_next_step": {
+      "enum": [
+        "escalate_to_service_owner",
+        "request_manual_verification",
+        "continue_read_only_investigation",
+        "close_incident"
+      ]
+    }
+  }
+}
