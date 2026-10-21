@@ -1,5 +1,32 @@
 # ACT-013 / ADR-004 — offline synthetic policy/trace proof
 
+## ACT-014 bounded P1 pre-model isolation correction (2026-10-20)
+
+**Disposition: genuine pre-model context exposure in the original synthetic runner.** Previously, `model_exposed_source_ids` was populated after the access/scope gate but **before** source freshness, integrity, runbook status, and unsafe-instruction eligibility. Thus it included the rejected P1 source. This was not merely a misnamed audit field. The corrected runner retains the rejected ID only in audit/eligibility outputs and constructs the *simulated* model context after eligibility.
+
+**Corrected stage order:** audit-only candidate intake -> pre-retrieval access gate -> access-limited candidate rerank -> pre-model provenance/integrity/status/freshness/untrusted-instruction eligibility -> simulated model-context assembly from approved sources only -> independent post-model proposal/citation validation -> read-tool budgets and optional approval dry run -> deterministic decision/audit. No actual model is called.
+
+**Trace fields (do not conflate their audiences):**
+
+| Field | Meaning / audience |
+| --- | --- |
+| `retrieved_candidate_ids` | Input retrieval order in the **audit**; may include blocked IDs and is **not** model input. |
+| `access_rejected_source_ids` | Audit-only rejection before reranking/model-context exposure for tenant, service or source permission. |
+| `eligibility_rejected_source_ids` | Audit-only rejection after authorization for freshness, provenance/integrity, runbook status, service fit, or annotated unsafe instructions. |
+| `actual_model_context_source_ids` | IDs in the only **simulated** context payload that would go to a model. Superset of eligible ranked runbooks may include separately eligible telemetry; no rejected source can be included. |
+| `model_context_sources` | Exact synthetic `snapshot_id`, `version`, timestamps, source, and `text` comprising that hypothetical model payload; excludes rejected content. |
+| `post_model_cited_source_ids` | Fixture-supplied proposal citations. **Untrusted model output**, not proof the model saw a referenced source. |
+| `post_model_citation_rejected_source_ids` | Citations independently rejected after the proposal because they do not resolve to the eligible assembled context. |
+| `source_eligibility` and `audit_events` | Reviewer-only provenance/rejection reasoning and explicit control chronology. |
+
+The P1 fixture is **unchanged**. `RB-CHK-OLD@v1` is still retrieved and remains auditable as rejected for source age, untrusted-instruction annotation, and ID/version mismatch (`@v1` versus declared `v3`); it is not in the model-context IDs **or text**, while its model-proposed citation is rejected. The fixture's original simulated proposal remains intentionally adversarial: a forged citation can be emitted whether or not a model was exposed to the source. Pre-model exclusion and post-model citation checking remain independent controls.
+
+`python .\phase4\proof_runner.py verify --out .\phase4\evidence\ACT-014-policy-trace-2026-10-20.jsonl` replays seven unchanged P0–P6 inputs and now asserts P1's retrieved/rejected audit, three exclusion reasons, context ID/text absence, post-model citation rejection, pipeline stage order, blocked decision, and zero writes, as well as all prior cross-case safety invariants. The runner's output policy version is `ADR-004/offline-v1.1-p1-isolation`, while input fixtures retain their frozen `ADR-004/offline-v1` version so the learner's earlier diagnoses and input evidence remain reproducible. The original trace and commit are **not** overwritten.
+
+**Host patch safety:** This release contains only updated `phase4/proof_runner.py`, `phase4/TRACE_README.md`, and a *new* corrected `phase4/evidence/ACT-014-policy-trace-2026-10-20.jsonl` file. Copy only after inspecting your `gate04-ai-systems` branch and verifying the runner's original SHA-256 `a7ccd60f6ccc3c6c6c7eda49db964e3621845fe5dd6c20df2aaeae4621c5d1a9`. Do not overwrite a modified runner; review differences first. Do not replace `.git`, Phase-1/2/3 files, existing P0/P1 observations, or the pre-remediation ACT-013 evidence trace. Git commit/push on Barry's existing branch is required for durable host commit evidence; the architect sandbox cannot access the private remote.
+
+---
+
 **Scope: IMPLEMENTED AND ARCHITECT-TESTED (synthetic only).** This additive `phase4/` folder simulates evidence access, relevance order, deterministic eligibility, an allowlisted read-only tool gateway, bounded investigation, proposal validation, degraded/abstention, and an application-controlled pre-execution **dry run**. No network requests, model calls, embeddings, SQLite writes, ServiceNow writes, Datadog calls or production credentials. No live AI/RAG benchmark or gate-readiness advancement.
 
 ## Important repository boundary
