@@ -1,111 +1,114 @@
-# Incident AI Deployment Lab — Phase 2 Application Fluency Slice
+# Incident AI Deployment Lab
 
-Purpose: the minimum runnable Phase-2 lab slice for GATE-02 D1-D4. It is intentionally small: three Python services, Docker Compose, startup/runtime configuration, structured logs, three deterministic seeded faults, and a bounded Git change path.
+I built this lab to study a practical incident-management question: when should an AI-assisted workflow offer a recommendation, and when should it stop?
 
-## Boundaries
+The project uses mock services and synthetic incident data. It focuses on integration, application behavior, evidence quality, and human decision authority. It is not a production incident assistant.
 
-- `integration-client -> mock-servicenow`
-- `integration-client -> mock-datadog`
+## Project status
 
-The integration client preserves the Phase-1 normalized context contract:
+| Phase | Status | Where to find it |
+| --- | --- | --- |
+| 1. Integration fluency | Complete | [`main`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/tree/main) |
+| 2. Application fluency | Complete | [`main`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/tree/main) |
+| 3. Data fluency | Complete | [`gate03-data-fluency`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/tree/gate03-data-fluency) |
+| 4. AI systems fluency | Complete for the offline policy scope | [`gate04-ai-systems`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/tree/gate04-ai-systems) |
+| 5. AI evaluation fluency | Evaluation package prepared; learner work pending | Not yet published in this repository |
 
-```json
-{
-  "incident_id": "INC-1001",
-  "service": "checkout-api",
-  "symptoms": [],
-  "dependencies": [],
-  "recent_changes": [],
-  "similar_incidents": [],
-  "runbook_refs": [],
-  "evidence_quality": "unknown"
-}
+`main` remains the runnable Phase 2 application. Later phases live on separate branches. This README describes the entire project; it does not imply all phases have been merged into `main`.
+
+## Why I built it
+
+Incident teams need information quickly. They also need to know when evidence is too weak to support a claim. An AI assistant must respect those limits.
+
+I use this lab to practice system diagnosis and deployment decisions. Each phase gives me a design to test and evidence to review. Some implementation work used AI assistance. The focus is understanding system behavior, challenging designs, and deciding when a workflow is safe to use.
+
+## Phase 1–2: integration and application behavior
+
+The runnable application has three Python services:
+
+```text
+mock-servicenow  ---->  integration-client  <----  mock-datadog
+                              |
+                     normalized incident context
 ```
 
-## Prerequisites
+The integration client calls both dependencies. The mock services do not call one another.
 
-- Docker Desktop or Docker Engine with Compose v2 (`docker compose`)
-- Python 3.10+ for `labctl.py` (optional; raw Compose commands also work)
-- Git
-- ports 8000, 8001, and 8002 free
+The lab covers Docker Compose, runtime configuration, structured logs, and three seeded faults. A healthy container is not enough. The context request must succeed, and logs must show successful dependency calls.
 
-## Healthy baseline
+### Run the application
+
+Requirements: Docker Compose v2, Python 3.10+, and Git.
 
 ```bash
+git clone https://github.com/bjmayo523-breeze/incident-ai-deployment-lab.git
+cd incident-ai-deployment-lab
 python labctl.py up
 python labctl.py baseline
 ```
 
-Application behavior check:
+Check `http://localhost:8000/context/INC-1001` and review the service logs.
 
-```bash
-curl http://localhost:8000/context/INC-1001
-```
-
-Evidence commands:
-
-```bash
-docker compose --env-file config/lab.env ps
-docker compose --env-file config/lab.env logs --tail 100 integration-client
-docker compose --env-file config/lab.env logs --tail 100 mock-servicenow mock-datadog
-```
-
-A healthy baseline requires more than three running containers: the context request must succeed and logs must show successful outbound calls to both dependencies.
-
-## Runtime configuration lifecycle
-
-`config/lab.env` is the tracked source for integration-client runtime values. Compose injects those values into the integration-client container when it is created. `integration-client/app.py` loads them at process startup. Therefore a startup-loaded value is not effective in an already running client until that client is recreated/restarted.
-
-Key settings:
-
-- `REQUEST_TIMEOUT_SECONDS`
-- `SERVICENOW_URL`
-- `DATADOG_URL`
-- `LAB_BEARER_TOKEN`
-
-For a client-only config change:
-
-```bash
-python labctl.py restart-client
-```
-
-Then verify the effective startup configuration and observed behavior in integration-client logs.
-
-## Seeded GATE-02 faults
-
-The learner-facing activation interface intentionally uses opaque IDs. Diagnose from runtime evidence before inspecting the override file.
+Run one seeded fault at a time:
 
 ```bash
 python labctl.py fault F1
-python labctl.py fault F2
-python labctl.py fault F3
-```
-
-Run one fault at a time. Return to healthy baseline between attempts:
-
-```bash
 python labctl.py reset
 ```
 
-Do not treat the fault override source as the first diagnostic step during D4. Use service/container state, application behavior, and logs first.
+Runtime values live in `config/lab.env`. Changes to startup-loaded values require restarting or recreating the consuming client. Use `python labctl.py restart-client` and verify the effective configuration.
 
-## Bounded Git change path for D3
+## Phase 3: data and retrieval
 
-The lowest-risk tracked path is `config/lab.env`. Example learner workflow:
+The [`gate03-data-fluency`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/tree/gate03-data-fluency) branch contains a SQLite learning exercise. It includes synthetic incident and runbook records, relationships, joins, and candidate-runbook review queries.
+
+This proves data reasoning within the exercise. It does not mean the database has been deployed behind the Phase 2 API.
+
+## Phase 4: AI systems and policy boundaries
+
+The [`gate04-ai-systems`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/tree/gate04-ai-systems) branch contains an offline policy simulation. It is deterministic and makes no live model calls.
+
+The runner tests:
+
+- Access, freshness, integrity, and source eligibility before simulated model-context assembly.
+- Independent validation of proposed claims and cited evidence.
+- Read-only tool permissions, scope limits, and investigation budgets.
+- Blocking, degraded behavior, and abstention when evidence is insufficient.
+- Human review boundaries and dry-run checks without operational writes.
+
+An earlier test exposed a source-isolation flaw in the synthetic runner. The corrected version excludes rejected evidence before assembling simulated model context. Rejected material remains visible in the audit trail.
+
+Seven frozen synthetic cases passed the corrected verification on October 20, 2026. The run reported zero operational side effects. This does not establish production safety or model accuracy.
+
+The accepted correction is commit [`b694954`](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/commit/b694954640e2d40898e469662b6308a5362b1540).
+
+See the [Phase 4 trace guide](https://github.com/bjmayo523-breeze/incident-ai-deployment-lab/blob/gate04-ai-systems/phase4/TRACE_README.md) for reproducible evidence and scope details.
+
+### Run the offline Phase 4 verification
+
+From a fresh clone:
 
 ```bash
-git status
-git diff -- config/lab.env
-# edit one non-secret runtime value
-git diff -- config/lab.env
-python labctl.py restart-client
-# verify runtime effect
-git restore config/lab.env
-python labctl.py restart-client
+git fetch origin
+git switch --track origin/gate04-ai-systems
+python phase4/proof_runner.py verify --out local-phase4-trace.jsonl
 ```
 
-The deployment impact is bounded to the integration-client when changing a client-owned startup-loaded setting. Rollback is restoring the tracked file and recreating only the consuming service.
+This writes a local trace. It does not change the preserved evidence files.
 
-## Scope guard
+## What the lab does not claim
 
-This is not production application engineering. No database, queue, cache, Kubernetes, framework, CI/CD, or cloud deployment is added because none is required to prove GATE-02 D1-D4.
+- All incident and runbook records are synthetic.
+- The Phase 4 runner does not invoke a live LLM or production API.
+- Source checks use explicit synthetic fields, not a production prompt-injection detector.
+- No autonomous remediation or production incident write is implemented.
+- The phases are bounded exercises, not a unified production deployment.
+- Phase 5 evaluation results are not yet demonstrated or published.
+
+## Next: evaluation fluency
+
+The planned Phase 5 exercise covers labeling, false positives, missed abstentions, and policy-version regressions. It will also require a defended release, hold, or rollback decision.
+
+The Phase 5 learner package has been prepared outside GitHub. Installation and learner evidence remain pending.
+
+*Project status verified October 25, 2026.*
